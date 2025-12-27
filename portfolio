@@ -1,0 +1,79 @@
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+
+# -----------------------------
+# Step 1: Load Historical Data
+# -----------------------------
+# Sample historical data (can replace with CSV file)
+np.random.seed(42)
+
+days = 1000
+assets = ['Stock_A', 'Stock_B', 'Bond_C', 'Gold_D']
+
+price_data = pd.DataFrame({
+    asset: 100 + np.cumsum(np.random.normal(0.05, 1, days))
+    for asset in assets
+})
+
+# -----------------------------
+# Step 2: Calculate Daily Returns
+# -----------------------------
+returns = price_data.pct_change().dropna()
+
+# -----------------------------
+# Step 3: Generate Portfolios
+# -----------------------------
+num_portfolios = 300
+portfolio_features = []
+portfolio_values = []
+
+for _ in range(num_portfolios):
+    weights = np.random.dirichlet(np.ones(len(assets)))
+    
+    portfolio_return = np.dot(returns.mean(), weights) * 252
+    portfolio_risk = np.sqrt(np.dot(weights.T, np.dot(returns.cov() * 252, weights)))
+    
+    # Simulated long-term value (target)
+    future_value = 10000 * (1 + portfolio_return - portfolio_risk)
+    
+    portfolio_features.append([portfolio_return, portfolio_risk])
+    portfolio_values.append(future_value)
+
+X = np.array(portfolio_features)
+y = np.array(portfolio_values)
+
+# -----------------------------
+# Step 4: Train ML Model
+# -----------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+model = RandomForestRegressor(n_estimators=200, random_state=42)
+model.fit(X_train, y_train)
+
+# -----------------------------
+# Step 5: Evaluation
+# -----------------------------
+predictions = model.predict(X_test)
+mse = mean_squared_error(y_test, predictions)
+
+print("Model Mean Squared Error:", round(mse, 2))
+
+# -----------------------------
+# Step 6: Compare Investment Strategies
+# -----------------------------
+strategies = {
+    "Aggressive": [0.18, 0.25],
+    "Balanced": [0.12, 0.15],
+    "Conservative": [0.07, 0.08]
+}
+
+print("\nPredicted Long-Term Portfolio Values:")
+
+for name, features in strategies.items():
+    predicted_value = model.predict([features])[0]
+    print(f"{name} Strategy → ₹{round(predicted_value, 2)}")
