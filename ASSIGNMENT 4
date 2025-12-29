@@ -1,0 +1,63 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Environment (dynamic system)
+class DynamicSystem:
+    def __init__(self, a):
+        self.a = a  # system parameter (changes per environment)
+
+    def step(self, state, control):
+        return self.a * state + control
+
+# Adaptive Controller
+class AdaptiveController:
+    def __init__(self, lr=0.05):
+        self.w = np.random.randn()  # control gain
+        self.lr = lr
+
+    def act(self, state):
+        return -self.w * state
+
+    def adapt(self, error, state):
+        self.w -= self.lr * error * state
+
+# Meta-learning simulation
+def meta_learning_simulation(system_params, target=0.0, steps=30):
+    total_errors = []
+
+    controller = AdaptiveController()
+
+    for a in system_params:
+        system = DynamicSystem(a)
+        state = np.random.randn()
+
+        errors = []
+        for _ in range(steps):
+            control = controller.act(state)
+            next_state = system.step(state, control)
+            error = next_state - target
+            controller.adapt(error, state)
+
+            state = next_state
+            errors.append(abs(error))
+
+        total_errors.append(np.mean(errors))
+
+    return total_errors
+
+# Different operating conditions
+system_conditions = [0.6, 0.8, 1.0, 1.2, 1.4]
+
+errors = meta_learning_simulation(system_conditions)
+
+# Plot results
+plt.plot(system_conditions, errors, marker='o')
+plt.xlabel("System Parameter (Operating Condition)")
+plt.ylabel("Average Control Error")
+plt.title("Adaptive Control Performance using Meta-Learning")
+plt.grid()
+plt.show()
+
+# Print performance
+for cond, err in zip(system_conditions, errors):
+    print(f"Condition {cond}: Average Error = {err:.4f}")
